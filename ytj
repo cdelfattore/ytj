@@ -1,0 +1,76 @@
+#!/bin/bash
+
+# Christopher Del Fattore
+
+usage() {
+echo " ytj command line options:"
+echo " -h: display a usage statement (also displayed if ytj is called with no arguments)"
+echo " -k: keep downloaded video files (default behavior is to delete all downloaded flv files after they have been played."
+#echo " -l: (Optional) (I'm feeling *l*ucky) download and play only the first search result."
+
+}
+
+#store the search term in a file
+echo $1 > file;
+
+# replace the spaces if any with + (plus signs)
+addplus=`sed 's/  */+/g' file`;
+
+# remove the tempary file called file
+rm file;
+
+wget -O result.html  "http://www.youtube.com/results?search_query=$addplus%2C+video&lclk=video";
+
+#Find the links to the videos in result.html and download the videos
+#use grep with the following unique regular expression
+#this regular expression only takes the lines with the links to the videos that match our
+#search results, this regular expressions excludes featured videos and similar videos
+
+grep '<div class="yt-lockup-thumbnail"><a href="/watch?v=' result.html |
+
+#now use sed commands to get ride of the html text beside the link we want
+#first use this sed to remove most of the html before the link we need
+
+sed 's/<div  id=""  class="yt-uix-tile yt-lockup-list yt-tile-default yt-grid-box "><div class="yt-lockup-thumbnail">//g' |
+
+#more sed needed, little by little i will have the link to the url of each video
+
+sed 's/class="ux-thumb-wrap yt-uix-sessionlink yt-uix-contextlink contains-addto result-item-thumb"//g' |
+
+# more
+
+sed 's/<span class="video-thumb ux-thumb yt-thumb-default-185 "><span class="yt-thumb-clip"><span class="yt-thumb-clip-inner">//g' |
+
+# you guessed it more!
+
+sed 's/data-sessionlink=".*"><img src="http:\/\/.*<\/span>//g' |
+
+# breakthrough almost done
+
+sed 's/ *data-sessionlink="ved=.*&amp;ei=.*><img.*alt=.*><span class="vertical-align"><\/span><\/span><\/span><\/span><span class="video-time">.*<\/span>//g' |
+
+# last few
+
+sed 's/<a href="\///g' |
+
+sed 's/"//g' | sed 's/^  *//g' | sed 's/://g' > links;
+
+# time to download the videos and play the audio
+
+while read line
+do
+cclive -q -O $line http://www.youtube.com/$line
+
+echo "Converting video to audio format"
+mplayer -really-quiet -ao pcm -vo null $line 2>/dev/null
+
+echo "convert the wav file to FLAC"
+flac audiodump.wav -f -o $line.flac
+
+rm audiodump.wav
+echo "done"
+
+done <links
+
+#remove any existing temporary files
+rm result.html;
