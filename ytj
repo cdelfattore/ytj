@@ -10,23 +10,29 @@ echo " -k: keep downloaded video files (default behavior is to delete all downlo
 
 }
 
+
+
 #store the search term in a file
 echo $1 > file;
 
 # replace the spaces if any with + (plus signs)
 addplus=`sed 's/  */+/g' file`;
 
+vid_directory=`sed -e "s/  */_/g" -e "s/'//g" file`;
+
+mkdir -m +rwx $vid_directory;
+
 # remove the tempary file called file
 rm file;
 
-wget -O result.html  "http://www.youtube.com/results?search_query=$addplus%2C+video&lclk=video";
+wget -O ytj.results  "http://www.youtube.com/results?search_query=$addplus%2C+video&lclk=video";
 
 #Find the links to the videos in result.html and download the videos
 #use grep with the following unique regular expression
 #this regular expression only takes the lines with the links to the videos that match our
 #search results, this regular expressions excludes featured videos and similar videos
 
-grep '<div class="yt-lockup-thumbnail"><a href="/watch?v=' result.html |
+grep '<div class="yt-lockup-thumbnail"><a href="/watch?v=' ytj.results |
 
 #now use sed commands to get ride of the html text beside the link we want
 #first use this sed to remove most of the html before the link we need
@@ -53,24 +59,24 @@ sed 's/ *data-sessionlink="ved=.*&amp;ei=.*><img.*alt=.*><span class="vertical-a
 
 sed 's/<a href="\///g' |
 
-sed 's/"//g' | sed 's/^  *//g' | sed 's/://g' > links;
+sed 's/"//g' | sed 's/^  *//g' | sed 's/$\n//g' > links;
+
+#get the titles of the videos
 
 # time to download the videos and play the audio
+ID=`cat ~/ytj-git/links`
 
-while read line
+for line in $ID
 do
-cclive -q -O $line http://www.youtube.com/$line
+cclive -O $vid_directory/$line "http://www.youtube.com/$line" &
+done
 
-echo "Converting video to audio format"
-mplayer -really-quiet -ao pcm -vo null $line 2>/dev/null
+for line in $ID
+do
+mplayer -vo null $line
+done
 
-echo "convert the wav file to FLAC"
-flac audiodump.wav -f -o $line.flac
-
-rm audiodump.wav
-echo "done"
-
-done <links
 
 #remove any existing temporary files
-rm result.html;
+rm ytj.results;
+rm -r $vid_directory 

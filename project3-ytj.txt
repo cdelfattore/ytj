@@ -1,0 +1,115 @@
+Project 3: ytj
+
+Due date: Thursday, 11/29, 11:59pm 
+
+
+====== OVERVIEW ======
+
+Write a script called ytj (youtube jukebox).
+
+  - The ytj script takes one argument string and searches youtube.com
+    using the argument string, e.g. $ ytj "don knuth lecture"
+
+  - Using the first page of search results returned by
+    youtube.com, ytj will download and play (audio only) the
+    videos in the search results
+
+        - This will require ytj to perform these tasks: 1) search
+          youtube for videos based on the search string; 2) download
+          the youtube videos in the search results as files; 3) play
+          the files (audio only)
+
+            - Tasks 2 (download) and 3 (play) have to happen in parallel.
+                - Soon (say 10 seconds) after the first youtube
+                  file has begun to be downloaded, a nohup'ed
+                  mplayer process should start in the background
+                  to play all the youtube files in the download
+                  list. (mplayer can play an incomplete youtube
+                  file that is still being downloaded).
+
+                  - The nohup method to start a command chain is needed:
+
+                        nohup bash -c "command1; command2; ..." &
+
+                - While mplayer is silently playing in the
+                  background, ytj will be downloading the videos
+                  in the foreground, displaying the progress of
+                  each download.
+
+        - Some of the youtube search results may be playlists or
+          channels. Just skip the playlists and channels, or taylor
+          your youtube search to exclude playlists and channels.
+          Download and play only search results that are youtube
+          videos.
+
+        - See additional sections below for more details.
+
+
+
+
+====== SYNOPSIS ======
+
+  - ytj command line options:
+    -h: display a usage statement (also displayed if ytj is called with no
+        arguments)
+    -k: keep downloaded video files (default behavior is to delete all
+        downloaded video files after they have been played.
+    -l: (I'm feeling *l*ucky) download and play only the
+        first search result. (EXTRA CREDIT, +5%) 
+
+
+  
+
+====== STORAGE ======
+
+  - All video files downloaded will be saved to a directory whose name
+    is based on the ytj search argument. So, if the ytj search argument is
+    "the avalanches", videos will be downloaded to the directory called
+    "the_avalanches".
+    - If the user chooses not to not to keep the downloaded video files,
+      then just delete that directory upon script exit.
+
+
+
+
+
+====== TOOLS ======
+
+  - Tools needed:  - wget (search youtube)
+                   - The usual cast of UNIX text processing utilities
+                      - extract needed info from wget
+                   - yt (script developed in class to download and play
+                     youtube videos)
+                      - use yt to only download, not play
+                   - mplayer (play video files)
+
+
+
+
+
+
+====== SEARCHING YOUTUBE ======
+
+  - Searching youtube and similar sites isn't that hard
+    - Examples of valid search URLs:
+        http://www.youtube.com/results?search_query=don+knuth+lecture
+        http://www.youtube.com/results?search_query=the+avalanches
+    - ytj should handle invalid searches like the following by
+      exiting with a message, such as "No video results for
+      'kdon nuth lecture'":
+        http://www.youtube.com/results?search_query=kdon+nuth+lecture
+
+  - Optionally, see Google's Youtube API Developer's Guide (h/t:
+    James F.):
+    http://code.google.com/apis/youtube/2.0/developers_guide_protocol_api_query_parameters.html
+    - Using the Youtube API for video querying will make the ytj
+      script easier to maintain in the future.
+
+
+
+
+
+
+====== TURN-IN ======
+
+  - Turn in:  ytj script (fully documented using comments)

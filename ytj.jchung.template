@@ -1,0 +1,119 @@
+#!/bin/bash
+
+# ytj: youtube jukebox
+
+# Depends on wget, UNIX text processing utilities, yt, mplayer
+
+
+
+
+
+
+# Parse command line arguments to set behavior of script.
+# Display usage if necessary.
+# If '-k' or '-l' options used, use 'shift' command until the youtube search
+# term argument is $1.
+
+
+
+
+
+
+# Create a directory to match the script's search argument.
+# Replace spaces in the directory name with underscores "_", and omit
+# special characters that would be misinterpreted by the shell.
+# If the youtube search was for "tim o'reilly 2.0" the new directory would be
+# "tim_oreilly_2.0".
+# Change to the newly created directory, so that any new files that
+# are created are created in the new directory.
+
+
+
+
+
+
+# Create the search url $SURL from the search argument, and
+# download the search results page with wget.
+# If the search was for "movie trailer 2012", $SURL would contain
+# "http://www.youtube.com/results?search_query=movie+trailer+2012"
+
+
+
+
+
+
+
+# If youtube found no videos results for the search, then exit
+# with an error message.
+
+
+
+
+
+# From the search results page retrieved by wget, extract html lines like the
+# following (if searching youtube for "movie trailer 2012"):
+#
+# <li class="yt-grid-box result-item-video context-data-item" data-context-item-title="GREAT GATSBY Trailer (2012) Movie HD" data-context-item-type="video" data-context-item-time="2:28" data-context-item-user="MovieclipsCOMINGSOON" data-context-item-id="rARN6agiW7o" data-context-item-views="7,294,645 views">
+# 
+# The above line of html represents a youtube video with title: "GREAT GATSBY
+# Trailer (2012) Movie HD" and URL: https://www.youtube.com/watch?v=rARN6agiW7o
+#
+# Store all the extracted lines in ytj.results:
+
+
+
+
+
+
+
+# From ytj.results, extract the list of video ids $IDS to download;
+# $IDS would contain a list that looks something like
+# "rARN6agiW7o HhFVSwlncGg k4R_2rfJN8g 1w7OgIMMRc4 ...", where each item in
+# $IDS represents the ID of a youtube video.
+
+
+
+
+
+
+# Also from ytj.results, extract the list of video filenames $TITLES (for
+# mplayer to play).
+# Be sure to convert newlines to spaces when creating the $TITLES
+# list, so that the video filenames are space separated; use tr '\n' ' '
+# The filenames themselves must not contain spaces, &quot;, &amp;, or
+# anything that's not in the set [A-Za-z0-9_@-].
+# Filenames must end in ".webm".
+# If ytj.results contains the results of the search "don knuth
+# lecture", $TITLES should contain something like:
+# Don_Knuth_Part_1m4v.webm Authors@Google_Donald_Knuth.webm Authors@Google_Randall_Munroe_of_xkcd.webm ...
+# IMPORTANT: Make sure that the ytj and yt scripts are generating the same
+# video filenames.
+
+
+
+
+
+
+
+# Schedule mplayer to start playing the list of files in $TITLES
+# after about 10 seconds.  Use nohup.
+# Make mplayer play the files "really quietly," so that nohup.out
+# doesn't get huge.
+
+
+
+
+
+
+# Loop to download videos using the ids in $IDS.
+# Use yt to handle the downloading and saving of videos.
+
+
+
+
+
+
+# Clean up any temporary files.
+# Clean up .webm files if not keeping them.
+# If nothing is being kept, cd .., and remove the directory that was created to
+# hold the videos.
