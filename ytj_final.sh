@@ -4,16 +4,44 @@
 # Brian Castellaneta
 # Jordan Digiovanni 
 
-
-#Create a directory on the users desktop and go to it, this is where all our work will be done
-
+#variables for use in the script
 keep=""
 ifl=""
 quiet=""
+YT="http://www.youtube.com/"
 
+#Afunction for extracting the youtube links from the results file
+cleanup(){
+#create the needed files
+touch result.mod
+touch links
 
+#substitute all '/' for '!' for use later
+cat result.html | awk '{gsub("/","!")}1' > result.mod
+
+#iterate through the file and print all instances of whate we are looking for
+#then use sed to remove any unnecessary text and finally save it to the links file
+awk '{for(i=1;i<=NF;i++){if($i~/^href="!watch?/){print $i}}}' result.mod | sed "s/^href=*//g" | sed "s/^href=//g" | sed "s/\"//g"| sed "s/\!//g" > links
+
+#clean up 
+rm result.mod
+
+}
+
+#a function used when there are no search results
+fail(){
+cclive -q -O no.play "http://www.youtube.com/watch?v=xFGfWrJR5Ck"  & 
+sleep 2s
+mplayer -vo null no.play &> /dev/null &
+wait $!
+kill $$
+rm no.play
+}
+
+#a function used to handle command line arguments
 options() {
 
+#if there are no args or any of them are equal to '-h' we display the usage menu
 if [ $# -eq 0 -o "$1" = "-h" -o "$2" = "-h" -o "$3" = "-h" -o "$4" = "-h" ];then
   echo "Usage: ytj [OPTIONS] [URL]"
   echo "Available OPTIONS:"
@@ -23,16 +51,17 @@ if [ $# -eq 0 -o "$1" = "-h" -o "$2" = "-h" -o "$3" = "-h" -o "$4" = "-h" ];then
   echo " -q: will silence the script so that it will not ask for user input"
   kill $$
 fi
-
+#if any of them are equal to '-k' we set the keep variable
 if [ "$1" = "-k" -o "$2" = "-k" -o "$3" = "-k" -o "$4" = "-k" ];then
 
   keep="T"
 fi
-
+#if any of them are equal to '-l' we set the ifl variable
 if [ "$1" = "-l" -o "$2" = "-l" -o "$3" = "-l" -o "$4" = "-l" ];then
 
   ifl="T"
 fi
+#if any of them are equal to '-q' we set the quiet variable
 if [ "$1" = "-q" -o "$2" = "-q" -o "$3" = "-q" -o "$4" = "-q" ];then
 
   quiet="T"
@@ -41,6 +70,7 @@ fi
 
 options $@
 
+#create a directory on the user's desktop and move to it
 dir=~/Desktop/videos
 mkdir $dir
 cd $dir
@@ -56,50 +86,36 @@ rm file;
 
 wget -O result.html  "http://www.youtube.com/results?search_query=$addplus%2C+video&lclk=video";
 
-#Find the links to the videos in result.html and download the videos
-#use grep with the following unique regular expression
-#this regular expression only takes the lines with the links to the videos that match our
-#search results, this regular expressions excludes featured videos and similar videos
+#call the function to extract links
+cleanup
 
-grep '<div class="yt-lockup-thumbnail"><a href="/watch?v=' result.html |
+#Test for results
 
-#now use sed commands to get ride of the html text beside the link we want
-#first use this sed to remove most of the html before the link we need
+[ -s links ]
 
-sed 's/<div  id=""  class="yt-uix-tile yt-lockup-list yt-tile-default yt-grid-box "><div class="yt-lockup-thumbnail">//g' |
+if [ $? -ne 0 ];then
+echo "No results found!"
+fail
+fi 
 
-#more sed needed, little by little i will have the link to the url of each video
-
-sed 's/class="ux-thumb-wrap yt-uix-sessionlink yt-uix-contextlink contains-addto result-item-thumb"//g' |
-
-# more
-
-sed 's/<span class="video-thumb ux-thumb yt-thumb-default-185 "><span class="yt-thumb-clip"><span class="yt-thumb-clip-inner">//g' |
-
-# you guessed it more!
-
-sed 's/data-sessionlink=".*"><img src="http:\/\/.*<\/span>//g' |
-
-# breakthrough almost done
-
-sed 's/ *data-sessionlink="ved=.*&amp;ei=.*><img.*alt=.*><span class="vertical-align"><\/span><\/span><\/span><\/span><span class="video-time">.*<\/span>//g' |
-
-# last few
-
-sed 's/<a href="\///g' |
-
-sed 's/"//g' | sed 's/^  *//g' | sed 's/^/http:\/\/www\.youtube\.com\//g' > links;
-
+#Because the links file has duplicates wwe just skip every other link
+count=0
 # time to download the videos
 while read line
 do
-#this line goes out and downloads the videos
-cclive -q  $line & 
-#if the "im feeling lucky" option is selected it will break the lop after downloading the first video
-if [ "$ifl" != "" ];then
-   break
-fi
-
+check=$(( $count % 2 ))
+ if [ $check -eq 0 ];then
+   #this line goes out and downloads the videos
+   cclive -q  "$YT$line" & 
+   #echo "line -- $YT$line"
+   #echo "check = $check"
+   #if the "im feeling lucky" option is selected it will break the lop after       downloading the first video
+   if [ "$ifl" != "" ];then
+      break
+   fi
+        
+ fi
+ count=$((count+1))
 done <links
 #sleep for 10s to allow cclive to download some of the file
 sleep 10s
@@ -151,7 +167,7 @@ done
 
 #remove any existing temporary files
 rm result.html
-rm links
+#rm links
 #if the keep files option is select the videos folder we created will be saved
 if [ "$keep" != "" ];then
 	echo "keeping files..."
